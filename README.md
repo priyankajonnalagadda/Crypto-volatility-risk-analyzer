@@ -16,3 +16,6 @@ This project is collaboratively developed by **Team A**.
 - Pranathi P – https://github.com/PranathiP14
 - Manya Saraswat – https://github.com/manyasaraswat14
 
+## Abstract
+
+Cryptocurrency markets are highly volatile, making it difficult for investors and learners to assess risk accurately. This project, **Crypto Volatility and Risk Analyzer**, aims to analyze historical cryptocurrency price data to measure volatility and evaluate risk levels using data analytics and statistical techniques. The system processes market data to identify price fluctuations and generate meaningful risk indicators. By visualizing volatility trends and risk metrics, the project helps users better understand market instability and supports informed decision-making in cryptocurrency investments.
