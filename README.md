@@ -16,16 +16,9 @@ This project is collaboratively developed by **Team A**.
 - Pranathi P – https://github.com/PranathiP14
 - Manya Saraswat – https://github.com/manyasaraswat14
 
-Got it 👍 You want it to **flow naturally after the Abstract** in the README.
-Use this structure — it reads clean and professional.
-
----
-
 ### Abstract
 
 Cryptocurrency markets are highly volatile, making it difficult for investors and learners to assess risk accurately. This project, **Crypto Volatility and Risk Analyzer**, analyzes historical cryptocurrency price data to measure volatility and evaluate risk using statistical and data analytics techniques. By visualizing volatility trends and risk indicators, the system helps users better understand market instability and supports informed decision-making.
-
----
 
 ### Milestone 1 – Problem Understanding & Planning
 
@@ -41,7 +34,8 @@ To understand the problem of cryptocurrency volatility and define a structured a
 
 **Deliverable:**
 
-* *Milestone-1 PPT*: https://drive.google.com/file/d/1iSQGTYVORE3rwv9LnA_rTu5V-t2M3DPN/view?usp=sharing  outlining the project concept and system design
+* *Milestone-1 PPT*: https://drive.google.com/file/d/1iSQGTYVORE3rwv9LnA_rTu5V-t2M3DPN/view?usp=sharing
+  (Outlining the project concept and system design)
 
 
 
