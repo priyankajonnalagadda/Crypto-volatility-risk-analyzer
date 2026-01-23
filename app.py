@@ -91,3 +91,4 @@ summary = pd.DataFrame({
 
 st.subheader("📋 Risk Summary")
 st.table(summary)
+
