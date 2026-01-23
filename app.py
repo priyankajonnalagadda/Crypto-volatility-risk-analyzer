@@ -21,20 +21,34 @@ st.write("Analyze market volatility and investment risk of cryptocurrencies")
 @st.cache_data
 def load_crypto_data(symbol, start="2022-01-01"):
     df = yf.download(symbol, start=start)
-    df = df[['Close']]
+
+    # 🔑 FIX: Flatten MultiIndex columns if present
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+
+    # Ensure Close column exists
+    if "Close" not in df.columns:
+        st.error("Close price data not available.")
+        st.stop()
+
+    df = df[["Close"]]
     df.dropna(inplace=True)
-    df['Return'] = df['Close'].pct_change()
+
+    df["Return"] = df["Close"].pct_change()
     df.dropna(inplace=True)
+
     return df
 
 def add_trends(df):
-    df['MA_7'] = df['Close'].rolling(window=7).mean()
-    df['MA_30'] = df['Close'].rolling(window=30).mean()
-    df['Trend'] = np.where(df['MA_7'] > df['MA_30'], "Uptrend", "Downtrend")
+    df["MA_7"] = df["Close"].rolling(7).mean()
+    df["MA_30"] = df["Close"].rolling(30).mean()
+    df["Trend"] = np.where(df["MA_7"] > df["MA_30"], "Uptrend", "Downtrend")
     return df
 
 def calculate_volatility(df):
-    df['Rolling_Volatility'] = df['Return'].rolling(window=30).std() * np.sqrt(365)
+    df["Rolling_Volatility"] = (
+        df["Return"].rolling(30).std() * np.sqrt(365)
+    )
     return df
 
 def risk_score(vol):
@@ -48,7 +62,7 @@ def risk_score(vol):
     return score, level
 
 # -----------------------------
-# Sidebar / Selection
+# Sidebar Selection
 # -----------------------------
 
 crypto_map = {
@@ -69,14 +83,14 @@ symbol = crypto_map[selected_crypto]
 # -----------------------------
 
 df = load_crypto_data(symbol)
-df = add_trends(df)              # ✅ MUST come before plotting MA
+df = add_trends(df)
 df = calculate_volatility(df)
 
 # -----------------------------
 # Metrics
 # -----------------------------
 
-latest_vol = df['Rolling_Volatility'].iloc[-1]
+latest_vol = df["Rolling_Volatility"].iloc[-1]
 score, risk_level = risk_score(latest_vol)
 
 col1, col2, col3 = st.columns(3)
@@ -85,14 +99,14 @@ col2.metric("Risk Score", score)
 col3.metric("Risk Category", risk_level)
 
 # -----------------------------
-# Charts
+# Charts (SAFE COLUMN SELECTION)
 # -----------------------------
 
 st.subheader("📈 Price Trend")
-st.line_chart(df[['Close', 'MA_7', 'MA_30']])
+st.line_chart(df.loc[:, ["Close", "MA_7", "MA_30"]])
 
 st.subheader("📉 Rolling Volatility (30 Days)")
-st.line_chart(df['Rolling_Volatility'])
+st.line_chart(df["Rolling_Volatility"])
 
 # -----------------------------
 # Summary Table
@@ -105,5 +119,4 @@ summary_df = pd.DataFrame({
 
 st.subheader("📋 Risk Summary")
 st.table(summary_df)
-
 
