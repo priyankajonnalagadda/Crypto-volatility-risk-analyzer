@@ -6,11 +6,12 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-# ===== NOW IMPORT PROJECT MODULES =====
+# ===== IMPORT LIBRARIES =====
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# ===== IMPORT PROJECT MODULES =====
 from data.data_loader import load_bitcoin
 from volatility.volatility_calc import volatility_analysis
 from risk.risk_score import add_risk_score
@@ -24,63 +25,59 @@ st.set_page_config(
 # ===== TITLE =====
 st.title("🚀 Crypto Volatility & Risk Analyzer")
 st.markdown(
-    "This dashboard analyzes **Bitcoin market data**, measures **volatility**, "
-    "and converts it into an easy-to-understand **risk score** for investors."
+    """
+    This dashboard analyzes **real Bitcoin market data**, measures **volatility**,  
+    and converts it into an easy-to-understand **risk score** for investors.
+    """
 )
 
 # ===== LOAD DATA =====
 st.header("📥 Data Collection")
-df = load_bitcoin()
-st.write("Latest raw Bitcoin data:")
-st.dataframe(df.tail())
+df_raw = load_bitcoin()
+
+st.write("Latest Bitcoin price data:")
+st.dataframe(df_raw.tail(10), use_container_width=True)
 
 # ===== VOLATILITY ANALYSIS =====
 st.header("📉 Volatility Analysis")
-df = volatility_analysis()
+df_vol = volatility_analysis()
 
 st.line_chart(
-    df.set_index("Date")["Volatility"],
+    df_vol.set_index("Date")["Volatility"],
     use_container_width=True
 )
 
 # ===== RISK SCORING =====
 st.header("⚠️ Risk Scoring")
-df = add_risk_score(df)
+df_risk = add_risk_score(df_vol)
 
 st.dataframe(
-    df[["Date", "Close", "Volatility", "Risk_Score", "Risk_Level"]].tail(10),
+    df_risk[["Date", "Close", "Volatility", "Risk_Score", "Risk_Level"]].tail(10),
     use_container_width=True
 )
 
 # ===== LATEST DAY SUMMARY =====
-latest = df.iloc[-1]
+latest = df_risk.iloc[-1]
 
-risk_level = (
-    latest["Risk_Level"].iloc[0]
-    if hasattr(latest["Risk_Level"], "iloc")
-    else latest["Risk_Level"]
-)
-
-risk_score = (
-    latest["Risk_Score"].iloc[0]
-    if hasattr(latest["Risk_Score"], "iloc")
-    else latest["Risk_Score"]
-)
+latest_price = float(latest["Close"])
+latest_volatility = float(latest["Volatility"])
+latest_risk_score = int(latest["Risk_Score"])
+latest_risk_level = str(latest["Risk_Level"])
 
 st.header("📊 Latest Market Summary")
 
 col1, col2, col3 = st.columns(3)
 
-col1.metric("💰 Bitcoin Price (USD)", round(latest["Close"], 2))
-col2.metric("📉 Volatility", round(latest["Volatility"], 5))
-col3.metric("🚦 Risk Score", risk_score)
+col1.metric("💰 Bitcoin Price (USD)", round(latest_price, 2))
+col2.metric("📉 Volatility", round(latest_volatility, 5))
+col3.metric("🚦 Risk Score", latest_risk_score)
 
 # ===== RISK INTERPRETATION =====
 st.subheader("🧠 Risk Interpretation")
 
-if risk_level == "High Risk":
+if latest_risk_level == "High Risk":
     st.error("⚠️ High market volatility detected. Suitable only for high-risk investors.")
-elif risk_level == "Medium Risk":
+elif latest_risk_level == "Medium Risk":
     st.warning("ℹ️ Moderate risk. A balanced investment strategy is recommended.")
 else:
     st.success("✅ Market is relatively stable. Suitable for conservative investors.")
@@ -88,11 +85,11 @@ else:
 # ===== RISK DISTRIBUTION =====
 st.header("📊 Risk Distribution")
 
-risk_counts = df["Risk_Level"].value_counts()
+risk_counts = df_risk["Risk_Level"].value_counts()
 
 fig1, ax1 = plt.subplots()
 risk_counts.plot(kind="bar", ax=ax1)
-ax1.set_title("Risk Level Distribution")
+ax1.set_title("Risk Level Distribution (Days)")
 ax1.set_xlabel("Risk Level")
 ax1.set_ylabel("Number of Days")
 st.pyplot(fig1)
