@@ -1,3 +1,8 @@
+import sys
+import os
+
+# Add project root to Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import streamlit as st
 from data.data_loader import load_bitcoin
 from volatility.volatility_calc import volatility_analysis
