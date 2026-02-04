@@ -23,6 +23,8 @@ tab_main, tab_compare, tab_portfolio, tab_ml, tab_data = st.tabs(
 @st.cache_data
 def load_data(ticker, start_date):
     df = yf.download(ticker, start=start_date, progress=False, auto_adjust=False, group_by="column")
+    if df is None or df.empty:
+        return pd.DataFrame(columns=["Date", "Close"])
     df = df.reset_index()
 
     if isinstance(df.columns, pd.MultiIndex):
@@ -31,13 +33,20 @@ def load_data(ticker, start_date):
     if "Adj Close" in df.columns:
         df["Close"] = df["Adj Close"]
 
+    if "Date" not in df.columns or "Close" not in df.columns:
+        return pd.DataFrame(columns=["Date", "Close"])
+
     df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+    df["Close"] = pd.to_numeric(df["Close"], errors="coerce")
     df = df.dropna(subset=["Date", "Close"]).copy()
     df = df.sort_values("Date").reset_index(drop=True)
     return df
 
 def compute_metrics(df, window):
     df = df.copy()
+    if df.empty or "Close" not in df.columns:
+        return df
+
     df["Daily_Return"] = df["Close"].pct_change(fill_method=None)
     df["Volatility"] = df["Daily_Return"].rolling(window).std()
 
@@ -64,12 +73,12 @@ def compute_metrics(df, window):
     df["Price_Drop_Alert"] = df["Daily_Return"] < -0.05
 
     def explain_row(r):
-        if pd.isna(r["Volatility"]) or pd.isna(r["Risk_Score"]):
+        if pd.isna(r.get("Volatility", np.nan)) or pd.isna(r.get("Risk_Score", np.nan)):
             return "Not enough data for explanation."
         parts = [f"Risk: {r['Risk_Category']} (Score {r['Risk_Score']:.0f}/100)"]
-        if r["Vol_Spike_Alert"]:
+        if bool(r.get("Vol_Spike_Alert", False)):
             parts.append("Volatility spike detected")
-        if r["Price_Drop_Alert"]:
+        if bool(r.get("Price_Drop_Alert", False)):
             parts.append("Sudden price drop detected")
         return " | ".join(parts)
 
@@ -89,14 +98,19 @@ with st.sidebar:
 
 with tab_main:
     ticker = coins_map[single_coin]
-    df = load_data(ticker, start_date)
-    df = compute_metrics(df, window)
+    df_raw = load_data(ticker, start_date)
+    df = compute_metrics(df_raw, window)
 
-    latest = df.dropna(subset=["Close"]).tail(1).iloc[0]
+    base = df.dropna(subset=["Close"]).copy() if not df.empty else pd.DataFrame()
+    if base.empty:
+        st.error("No data received from Yahoo Finance right now. Try again after a minute, change Start Date, or switch coin.")
+        st.stop()
+
+    latest = base.tail(1).iloc[0]
     latest_metrics = df.dropna(subset=["Volatility", "Risk_Score"]).tail(1)
 
     price = float(latest["Close"])
-    ret = float(latest["Daily_Return"]) if not pd.isna(latest["Daily_Return"]) else np.nan
+    ret = float(latest["Daily_Return"]) if "Daily_Return" in df.columns and not pd.isna(latest.get("Daily_Return", np.nan)) else np.nan
 
     if len(latest_metrics):
         vol = float(latest_metrics["Volatility"].iloc[0])
@@ -117,19 +131,22 @@ with tab_main:
     colA, colB = st.columns(2)
     with colA:
         st.subheader("📈 Price Trend")
-        st.line_chart(df.set_index("Date")[["Close"]])
+        st.line_chart(df.set_index("Date")[["Close"]] if not df.empty else pd.DataFrame())
     with colB:
         st.subheader("📉 Volatility Trend")
-        st.line_chart(df.set_index("Date")[["Volatility"]])
+        st.line_chart(df.set_index("Date")[["Volatility"]] if "Volatility" in df.columns else pd.DataFrame())
 
     st.subheader("🚨 Recent Alerts")
-    alerts = df[df["Vol_Spike_Alert"] | df["Price_Drop_Alert"]].copy()
-    alerts["Alert_Type"] = np.where(alerts["Vol_Spike_Alert"], "Volatility Spike", "Price Drop")
-    alerts_view = alerts[["Date", "Alert_Type", "Close", "Daily_Return", "Volatility", "Risk_Category"]].tail(15)
-    if len(alerts_view):
-        st.dataframe(alerts_view.reset_index(drop=True), use_container_width=True)
+    if "Vol_Spike_Alert" in df.columns and "Price_Drop_Alert" in df.columns:
+        alerts = df[df["Vol_Spike_Alert"] | df["Price_Drop_Alert"]].copy()
+        if not alerts.empty:
+            alerts["Alert_Type"] = np.where(alerts["Vol_Spike_Alert"], "Volatility Spike", "Price Drop")
+            alerts_view = alerts[["Date", "Alert_Type", "Close", "Daily_Return", "Volatility", "Risk_Category"]].tail(15)
+            st.dataframe(alerts_view.reset_index(drop=True), use_container_width=True)
+        else:
+            st.success("No alerts detected in the selected period.")
     else:
-        st.success("No alerts detected in the selected period.")
+        st.info("Alerts will appear after enough data is available.")
 
 with tab_compare:
     if len(compare_coins) < 1:
@@ -138,37 +155,42 @@ with tab_compare:
         frames = []
         for name in compare_coins:
             t = coins_map[name]
-            d = compute_metrics(load_data(t, start_date), window)
-            d["Coin"] = name
-            frames.append(d)
+            d_raw = load_data(t, start_date)
+            d = compute_metrics(d_raw, window)
+            if not d.empty:
+                d["Coin"] = name
+                frames.append(d)
 
-        all_df = pd.concat(frames, ignore_index=True)
+        if not frames:
+            st.error("No comparison data available right now (Yahoo returned empty). Try again later.")
+        else:
+            all_df = pd.concat(frames, ignore_index=True)
 
-        summary = all_df.groupby("Coin").agg(
-            Avg_Volatility=("Volatility", "mean"),
-            Avg_Risk_Score=("Risk_Score", "mean"),
-            Latest_Close=("Close", "last")
-        ).reset_index()
+            summary = all_df.groupby("Coin").agg(
+                Avg_Volatility=("Volatility", "mean"),
+                Avg_Risk_Score=("Risk_Score", "mean"),
+                Latest_Close=("Close", "last")
+            ).reset_index()
 
-        def dominant_mode(s):
-            m = s.dropna().mode()
-            return m.iloc[0] if len(m) else "Unknown"
+            def dominant_mode(s):
+                m = s.dropna().mode()
+                return m.iloc[0] if len(m) else "Unknown"
 
-        summary["Dominant_Risk"] = all_df.groupby("Coin")["Risk_Category"].apply(dominant_mode).values
-        summary["Stability_Score"] = (100 - summary["Avg_Risk_Score"]).clip(0, 100)
-        summary = summary.sort_values("Stability_Score", ascending=False).reset_index(drop=True)
-        summary["Rank_Safest"] = summary.index + 1
+            summary["Dominant_Risk"] = all_df.groupby("Coin")["Risk_Category"].apply(dominant_mode).values
+            summary["Stability_Score"] = (100 - summary["Avg_Risk_Score"]).clip(0, 100)
+            summary = summary.sort_values("Stability_Score", ascending=False).reset_index(drop=True)
+            summary["Rank_Safest"] = summary.index + 1
 
-        st.subheader("📊 Comparison Summary (Safest → Riskiest)")
-        st.dataframe(summary.reset_index(drop=True), use_container_width=True)
+            st.subheader("📊 Comparison Summary (Safest → Riskiest)")
+            st.dataframe(summary.reset_index(drop=True), use_container_width=True)
 
-        c1, c2 = st.columns(2)
-        with c1:
-            st.subheader("✅ Top 3 Safest")
-            st.dataframe(summary.head(3).reset_index(drop=True), use_container_width=True)
-        with c2:
-            st.subheader("⚠️ Top 3 Riskiest")
-            st.dataframe(summary.sort_values("Avg_Risk_Score", ascending=False).head(3).reset_index(drop=True), use_container_width=True)
+            c1, c2 = st.columns(2)
+            with c1:
+                st.subheader("✅ Top 3 Safest")
+                st.dataframe(summary.head(3).reset_index(drop=True), use_container_width=True)
+            with c2:
+                st.subheader("⚠️ Top 3 Riskiest")
+                st.dataframe(summary.sort_values("Avg_Risk_Score", ascending=False).head(3).reset_index(drop=True), use_container_width=True)
 
 with tab_portfolio:
     st.subheader("💼 Portfolio Risk Calculator")
@@ -190,43 +212,49 @@ with tab_portfolio:
             frames = []
             for name in compare_coins:
                 t = coins_map[name]
-                d = compute_metrics(load_data(t, start_date), window)
-                d["Coin"] = name
-                frames.append(d)
-            all_df = pd.concat(frames, ignore_index=True)
+                d_raw = load_data(t, start_date)
+                d = compute_metrics(d_raw, window)
+                if not d.empty:
+                    d["Coin"] = name
+                    frames.append(d)
 
-            summary = all_df.groupby("Coin").agg(
-                Avg_Volatility=("Volatility", "mean"),
-                Avg_Risk_Score=("Risk_Score", "mean"),
-            ).reset_index()
-
-            w_norm = {k: v / total_w for k, v in weights.items() if v > 0}
-
-            portfolio_risk = 0.0
-            portfolio_vol = 0.0
-            for coin, w in w_norm.items():
-                row = summary[summary["Coin"] == coin]
-                if len(row):
-                    portfolio_risk += float(row["Avg_Risk_Score"].iloc[0]) * w
-                    portfolio_vol += float(row["Avg_Volatility"].iloc[0]) * w
-
-            if portfolio_risk >= 70:
-                prisk_level = "High"
-            elif portfolio_risk >= 40:
-                prisk_level = "Medium"
+            if not frames:
+                st.error("Portfolio data unavailable (Yahoo returned empty). Try again later.")
             else:
-                prisk_level = "Low"
+                all_df = pd.concat(frames, ignore_index=True)
 
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Portfolio Risk Score", f"{portfolio_risk:.1f}/100")
-            c2.metric("Portfolio Avg Volatility", f"{portfolio_vol:.4f}")
-            c3.metric("Portfolio Risk Level", prisk_level)
+                summary = all_df.groupby("Coin").agg(
+                    Avg_Volatility=("Volatility", "mean"),
+                    Avg_Risk_Score=("Risk_Score", "mean"),
+                ).reset_index()
 
-            breakdown = pd.DataFrame({
-                "Coin": list(w_norm.keys()),
-                "Weight (normalized)": [round(v, 3) for v in w_norm.values()]
-            })
-            st.dataframe(breakdown.reset_index(drop=True), use_container_width=True)
+                w_norm = {k: v / total_w for k, v in weights.items() if v > 0}
+
+                portfolio_risk = 0.0
+                portfolio_vol = 0.0
+                for coin, w in w_norm.items():
+                    row = summary[summary["Coin"] == coin]
+                    if len(row):
+                        portfolio_risk += float(row["Avg_Risk_Score"].iloc[0]) * w
+                        portfolio_vol += float(row["Avg_Volatility"].iloc[0]) * w
+
+                if portfolio_risk >= 70:
+                    prisk_level = "High"
+                elif portfolio_risk >= 40:
+                    prisk_level = "Medium"
+                else:
+                    prisk_level = "Low"
+
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Portfolio Risk Score", f"{portfolio_risk:.1f}/100")
+                c2.metric("Portfolio Avg Volatility", f"{portfolio_vol:.4f}")
+                c3.metric("Portfolio Risk Level", prisk_level)
+
+                breakdown = pd.DataFrame({
+                    "Coin": list(w_norm.keys()),
+                    "Weight (normalized)": [round(v, 3) for v in w_norm.values()]
+                })
+                st.dataframe(breakdown.reset_index(drop=True), use_container_width=True)
 
 with tab_ml:
     st.subheader("🤖 ML Forecast (Next-day Volatility)")
@@ -243,72 +271,83 @@ with tab_ml:
                 frames = []
                 for name in compare_coins:
                     t = coins_map[name]
-                    d = compute_metrics(load_data(t, start_date), window)
-                    d["Coin"] = name
-                    frames.append(d)
-                all_df = pd.concat(frames, ignore_index=True)
+                    d_raw = load_data(t, start_date)
+                    d = compute_metrics(d_raw, window)
+                    if not d.empty:
+                        d["Coin"] = name
+                        frames.append(d)
 
-                ml_frames = []
-                for coin in compare_coins:
-                    cdf = all_df[all_df["Coin"] == coin].copy().sort_values("Date")
-                    cdf["Vol_Lag1"] = cdf["Volatility"].shift(1)
-                    cdf["Ret_Lag1"] = cdf["Daily_Return"].shift(1)
-                    cdf["Target_NextVol"] = cdf["Volatility"].shift(-1)
-                    cdf = cdf.dropna(subset=["Vol_Lag1", "Ret_Lag1", "Target_NextVol"])
-                    cdf["Coin"] = coin
-                    ml_frames.append(cdf)
-
-                if not ml_frames:
-                    st.warning("Not enough data for ML forecasting (try earlier start date).")
+                if not frames:
+                    st.error("No ML data available right now (Yahoo returned empty). Try later.")
                 else:
-                    ml_df = pd.concat(ml_frames, ignore_index=True)
+                    all_df = pd.concat(frames, ignore_index=True)
 
-                    X = ml_df[["Vol_Lag1", "Ret_Lag1"]]
-                    y = ml_df["Target_NextVol"]
+                    ml_frames = []
+                    for coin in compare_coins:
+                        cdf = all_df[all_df["Coin"] == coin].copy().sort_values("Date")
+                        cdf["Vol_Lag1"] = cdf["Volatility"].shift(1)
+                        cdf["Ret_Lag1"] = cdf["Daily_Return"].shift(1)
+                        cdf["Target_NextVol"] = cdf["Volatility"].shift(-1)
+                        cdf = cdf.dropna(subset=["Vol_Lag1", "Ret_Lag1", "Target_NextVol"])
+                        if not cdf.empty:
+                            cdf["Coin"] = coin
+                            ml_frames.append(cdf)
 
-                    scaler = StandardScaler()
-                    Xs = scaler.fit_transform(X)
+                    if not ml_frames:
+                        st.warning("Not enough data for ML forecasting (try earlier start date).")
+                    else:
+                        ml_df = pd.concat(ml_frames, ignore_index=True)
 
-                    model = LinearRegression()
-                    model.fit(Xs, y)
+                        X = ml_df[["Vol_Lag1", "Ret_Lag1"]]
+                        y = ml_df["Target_NextVol"]
 
-                    ml_df["Predicted_NextVol"] = model.predict(Xs)
+                        scaler = StandardScaler()
+                        Xs = scaler.fit_transform(X)
 
-                    def pred_risk(v):
-                        if pd.isna(v):
-                            return "Unknown"
-                        if v < 0.01:
-                            return "Low"
-                        if v < 0.03:
-                            return "Medium"
-                        return "High"
+                        model = LinearRegression()
+                        model.fit(Xs, y)
 
-                    ml_df["Predicted_Risk"] = ml_df["Predicted_NextVol"].apply(pred_risk)
+                        ml_df["Predicted_NextVol"] = model.predict(Xs)
 
-                    forecast = (
-                        ml_df.sort_values("Date")
-                        .groupby("Coin")
-                        .tail(1)[["Coin", "Volatility", "Predicted_NextVol", "Predicted_Risk"]]
-                        .reset_index(drop=True)
-                    )
+                        def pred_risk(v):
+                            if pd.isna(v):
+                                return "Unknown"
+                            if v < 0.01:
+                                return "Low"
+                            if v < 0.03:
+                                return "Medium"
+                            return "High"
 
-                    st.dataframe(forecast.reset_index(drop=True), use_container_width=True)
+                        ml_df["Predicted_Risk"] = ml_df["Predicted_NextVol"].apply(pred_risk)
+
+                        forecast = (
+                            ml_df.sort_values("Date")
+                            .groupby("Coin")
+                            .tail(1)[["Coin", "Volatility", "Predicted_NextVol", "Predicted_Risk"]]
+                            .reset_index(drop=True)
+                        )
+
+                        st.dataframe(forecast.reset_index(drop=True), use_container_width=True)
         except Exception as e:
             st.error(f"ML module error: {e}")
-            st.info("Install scikit-learn: pip install scikit-learn")
+            st.info("Install scikit-learn via requirements.txt and redeploy.")
 
 with tab_data:
     st.subheader("⬇️ Download / Data Preview")
     st.write("Download the processed dataset for the selected single coin.")
 
     ticker = coins_map[single_coin]
-    df = compute_metrics(load_data(ticker, start_date), window)
+    df_raw = load_data(ticker, start_date)
+    df = compute_metrics(df_raw, window)
 
-    st.dataframe(df.tail(200).reset_index(drop=True), use_container_width=True)
+    if df.empty:
+        st.warning("No data available to download right now. Try later.")
+    else:
+        st.dataframe(df.tail(200).reset_index(drop=True), use_container_width=True)
+        st.download_button(
+            "Download Processed CSV",
+            df.to_csv(index=False),
+            file_name=f"{ticker}_risk_processed.csv",
+            mime="text/csv"
+        )
 
-    st.download_button(
-        "Download Processed CSV",
-        df.to_csv(index=False),
-        file_name=f"{ticker}_risk_processed.csv",
-        mime="text/csv"
-    )
