@@ -37,5 +37,87 @@ To understand the problem of cryptocurrency volatility and define a structured a
 * *Milestone-1 PPT*: https://drive.google.com/file/d/1iSQGTYVORE3rwv9LnA_rTu5V-t2M3DPN/view?usp=sharing
   (Outlining the project concept and system design)
 
+  ### Milestone 2 – Data Collection & Initial Analysis
+
+Objective:
+To collect real cryptocurrency market data and perform initial preprocessing, trend observation, and volatility analysis.
+
+Covered in this milestone:
+
+Data collection using CoinGecko API
+
+Data cleaning and preprocessing (handling missing values, formatting dates)
+
+Calculation of daily returns
+
+Initial price trend and market movement analysis
+
+Basic volatility computation
+
+Risk scoring and graphical visualization
+
+Deliverable:
+
+Milestone-2 PPT: 
+
+Milestone 2_Team A
+
+
+(Shows data collection, preprocessing steps, volatility calculation, and visualization progress)
+
+### Milestone 3 – Risk Modeling & Predictive Analysis
+
+Objective:
+To implement quantitative risk evaluation and predictive modeling for cryptocurrency market behavior.
+
+Covered in this milestone:
+
+Coin-level and portfolio-level risk analysis
+
+Rule-based abnormal volatility alert generation
+
+Feature extraction and risk classification
+
+Machine learning-based future risk prediction
+
+Structured outputs for reporting and visualization
+
+Deliverable:
+
+Milestone-3 PPT: 
+
+Milestone 3_Team A
+
+
+(Demonstrates risk modeling pipeline, alerts, and ML prediction workflow)
+
+### Milestone 4 – System Integration & Advanced Features
+
+Objective:
+To transform the analytical model into a complete crypto risk analytics platform with forecasting and interactive features.
+
+Covered in this milestone:
+
+Streamlit frontend integration
+
+Dynamic portfolio allocation and risk simulation
+
+7-day forecasting using Machine Learning
+
+Rolling volatility (7-day & 30-day)
+
+Real-time data handling and interactive dashboards
+
+Investment risk scenarios and performance metrics (R², RMSE, MAPE)
+
+Deliverable:
+
+Milestone-4 PPT: 
+
+Milestone 4_Team A
+
+
+(Shows final system integration, forecasting, portfolio analysis, and deployment-ready structure)
+
 
 
