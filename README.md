@@ -39,7 +39,10 @@ To understand the problem of cryptocurrency volatility and define a structured a
 
 ### Milestone 2 – Data Collection & Initial Analysis
 
+Milestone 2 – Data Collection & Initial Analysis
+
 Objective:
+
 To collect real cryptocurrency market data and perform initial preprocessing, trend observation, and volatility analysis.
 
 Covered in this milestone:
@@ -56,9 +59,7 @@ Basic volatility computation
 
 Risk scoring and graphical visualization
 
-Deliverable:
-
-Milestone-2 PPT: https://drive.google.com/file/d/1OjBTB2Ljn_ZCoFrpuF6G9Ind0Y_cCmpl/view?usp=sharing
+Deliverables: Milestone-2 PPT: https://drive.google.com/file/d/1OjBTB2Ljn_ZCoFrpuF6G9Ind0Y_cCmpl/view?usp=sharing
 
 Milestone 2_Team A: (Shows data collection, preprocessing steps, volatility calculation, and visualization progress)
 
