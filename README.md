@@ -37,7 +37,7 @@ To understand the problem of cryptocurrency volatility and define a structured a
 * *Milestone-1 PPT*: https://drive.google.com/file/d/1iSQGTYVORE3rwv9LnA_rTu5V-t2M3DPN/view?usp=sharing
   (Outlining the project concept and system design)
 
-  ### Milestone 2 – Data Collection & Initial Analysis
+### Milestone 2 – Data Collection & Initial Analysis
 
 Objective:
 To collect real cryptocurrency market data and perform initial preprocessing, trend observation, and volatility analysis.
@@ -58,12 +58,9 @@ Risk scoring and graphical visualization
 
 Deliverable:
 
-Milestone-2 PPT: 
+Milestone-2 PPT: https://drive.google.com/file/d/1OjBTB2Ljn_ZCoFrpuF6G9Ind0Y_cCmpl/view?usp=sharing
 
-Milestone 2_Team A
-
-
-(Shows data collection, preprocessing steps, volatility calculation, and visualization progress)
+Milestone 2_Team A: (Shows data collection, preprocessing steps, volatility calculation, and visualization progress)
 
 ### Milestone 3 – Risk Modeling & Predictive Analysis
 
@@ -84,12 +81,9 @@ Structured outputs for reporting and visualization
 
 Deliverable:
 
-Milestone-3 PPT: 
+Milestone-3 PPT: https://drive.google.com/file/d/1bXew65JLEP3upT2SSQjf9ZYMqT5nYt50/view?usp=sharing
 
-Milestone 3_Team A
-
-
-(Demonstrates risk modeling pipeline, alerts, and ML prediction workflow)
+Milestone 3_Team A: (Demonstrates risk modeling pipeline, alerts, and ML prediction workflow)
 
 ### Milestone 4 – System Integration & Advanced Features
 
@@ -112,12 +106,9 @@ Investment risk scenarios and performance metrics (R², RMSE, MAPE)
 
 Deliverable:
 
-Milestone-4 PPT: 
+Milestone-4 PPT: https://drive.google.com/file/d/1w0NqOP0YdN6qP6mQ1n6z6xtxcPXt_jT6/view?usp=sharing
 
-Milestone 4_Team A
-
-
-(Shows final system integration, forecasting, portfolio analysis, and deployment-ready structure)
+Milestone 4_Team A: (Shows final system integration, forecasting, portfolio analysis, and deployment-ready structure)
 
 
 
