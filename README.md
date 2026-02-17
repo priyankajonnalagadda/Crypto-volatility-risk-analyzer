@@ -80,10 +80,15 @@ Objective:
 Covered in this milestone:
 
 • Streamlit frontend integration
+
 • Dynamic portfolio allocation and risk simulation
+
 • 7-day forecasting using Machine Learning
+
 • Rolling volatility (7-day & 30-day)
+
 • Real-time data handling and interactive dashboards
+
 • Investment risk scenarios and performance metrics (R², RMSE, MAPE)
 
 • Deliverable: Milestone-4 PPT: https://drive.google.com/file/d/1w0NqOP0YdN6qP6mQ1n6z6xtxcPXt_jT6/view?usp=sharing
