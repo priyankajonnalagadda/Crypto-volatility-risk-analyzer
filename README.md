@@ -45,11 +45,17 @@ Objective:
 Covered in this milestone:
 
 • Data collection using CoinGecko API
+
 • Data cleaning and preprocessing (handling missing values, formatting dates)
+
 • Calculation of daily returns
+
 • Initial price trend and market movement analysis
+
 • Basic volatility computation
+
 • Risk scoring and graphical visualization
+
 
 • Deliverables: Milestone-2 PPT: https://drive.google.com/file/d/1OjBTB2Ljn_ZCoFrpuF6G9Ind0Y_cCmpl/view?usp=sharing
 
@@ -63,10 +69,15 @@ Objective:
 Covered in this milestone:
 
 • Coin-level and portfolio-level risk analysis
+
 • Rule-based abnormal volatility alert generation
+
 • Feature extraction and risk classification
+
 • Machine learning-based future risk prediction
+
 • Structured outputs for reporting and visualization
+
 
 • Deliverable: Milestone-3 PPT: https://drive.google.com/file/d/1bXew65JLEP3upT2SSQjf9ZYMqT5nYt50/view?usp=sharing
 
@@ -90,6 +101,7 @@ Covered in this milestone:
 • Real-time data handling and interactive dashboards
 
 • Investment risk scenarios and performance metrics (R², RMSE, MAPE)
+
 
 • Deliverable: Milestone-4 PPT: https://drive.google.com/file/d/1w0NqOP0YdN6qP6mQ1n6z6xtxcPXt_jT6/view?usp=sharing
 
